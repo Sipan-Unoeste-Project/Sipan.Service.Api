@@ -1,0 +1,17 @@
+@Sipan.Service.Api_HostAddress = http://localhost:5089
+
+### Listar pessoas
+GET {{Sipan.Service.Api_HostAddress}}/api/pessoas
+
+### Criar pessoa
+POST {{Sipan.Service.Api_HostAddress}}/api/pessoas
+Content-Type: application/json
+
+{
+  "nome": "Maria da Silva",
+  "cpf": "123.456.789-09",
+  "tipo": "doador",
+  "telefone": "(11) 98765-4321",
+  "email": "maria@email.com",
+  "obs": "Teste via API"
+}
