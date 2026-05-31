@@ -5,7 +5,7 @@ import {
   normalizeCpf,
   cpfExists,
   validateSalvarPessoa,
-} from '../pessoaHelpers.js';
+} from '../Helpers/pessoaHelpers.js';
 
 /**
  * @param {import('mysql2/promise').Pool} pool
