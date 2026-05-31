@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { createPool } from './database/db.js';
 import { pessoasRouter } from './routes/pessoasRoutes.js';
+import { animaisRouter } from './routes/animaisRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 5089);
@@ -20,6 +21,7 @@ app.use(
 const pool = createPool();
 
 app.use('/api/pessoas', pessoasRouter(pool));
+app.use('/api/animais', animaisRouter(pool));
 
 app.use((err, _req, res, _next) => {
   console.error(err);

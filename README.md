@@ -31,6 +31,16 @@ Swagger: http://localhost:5089/swagger
 | PUT | `/api/pessoas/{id}` | Atualizar |
 | DELETE | `/api/pessoas/{id}` | Excluir |
 
+## Endpoints – Animais
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/animais` | Lista (`?search=nome&status=Disponível`) |
+| GET | `/api/animais/{id}` | Detalhe |
+| POST | `/api/animais` | Criar |
+| PUT | `/api/animais/{id}` | Atualizar |
+| DELETE | `/api/animais/{id}` | Excluir |
+
 Corpo JSON (POST/PUT), igual ao formulário do frontend:
 
 ```json
