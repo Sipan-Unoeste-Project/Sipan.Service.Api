@@ -5,6 +5,13 @@ const TABLES = new Set([
   'usuarios',
   'apac_estoque',
   'apac_campanhas',
+  'apac_doacoes',
+  'apac_financeiro_entradas',
+  'apac_financeiro_saidas',
+  'apac_despesa_categorias',
+  'apac_despesas',
+  'apac_saude_registros',
+  'apac_saude_vacinas',
 ]);
 
 /** @param {unknown} value */

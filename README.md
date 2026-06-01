@@ -53,10 +53,17 @@ src/
     ├── funcionariosRoutes.js
     ├── usuariosRoutes.js
     ├── apacEstoqueRoutes.js
-    └── apacCampanhasRoutes.js
+    ├── apacCampanhasRoutes.js
+    ├── apacDoacoesRoutes.js
+    ├── apacFinanceiroRoutes.js
+    ├── apacDespesasRoutes.js
+    └── apacSaudeRoutes.js
 ```
 
-Schema APAC: execute `database/apac_schema.sql` no MySQL (banco `sipan`).
+Schemas MySQL (banco `sipan`):
+
+1. Tabelas SIPAN + APAC completas: use `Sipan.Service.Web/database/schema.sql`, **ou**
+2. `database/apac_schema.sql` (estoque/campanhas) + `database/apac_extended_schema.sql` (doações, financeiro, despesas, saúde)
 
 ## Padrões de desenvolvimento
 
@@ -135,6 +142,24 @@ Respostas em **snake_case** para o módulo APAC em `Sipan.Service.Web` (`/apac/e
 | PATCH | `/api/campanhas/{id}/doacao` | Registrar doação (`{ "valor": 100 }`) |
 | PATCH | `/api/campanhas/{id}/encerrar` | Encerrar campanha |
 | DELETE | `/api/campanhas/{id}` | Excluir |
+
+## Endpoints – APAC (doações, financeiro, despesas, saúde)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/doacoes` | Lista doações (`?busca=`) |
+| POST | `/api/doacoes` | Registrar doação (dinheiro ou produto + itens) |
+| DELETE | `/api/doacoes/{id}` | Excluir |
+| GET | `/api/financeiro` | `{ entradas, saidas }` |
+| POST | `/api/financeiro/entradas` | Nova entrada |
+| POST | `/api/financeiro/saidas` | Nova saída |
+| GET | `/api/despesas` | `{ categorias, despesas }` |
+| POST | `/api/despesas` | Nova despesa |
+| POST | `/api/despesas/categorias` | Nova categoria |
+| DELETE | `/api/despesas/{id}` | Excluir despesa |
+| GET | `/api/saude?animal_id=` | Registros e vacinas do animal |
+| POST | `/api/saude/registros` | Atendimento |
+| POST | `/api/saude/vacinas` | Vacina |
 
 Corpo JSON (POST/PUT pessoas), igual ao formulário do frontend:
 
