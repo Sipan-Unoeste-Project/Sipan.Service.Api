@@ -1,11 +1,25 @@
 import { Router } from 'express';
 import { asyncHandler } from '../asyncHandler.js';
 import {
-  toDto,
+  toPessoaDto,
   normalizeCpf,
   cpfExists,
-  validateSalvarPessoa,
-} from '../Helpers/pessoaHelpers.js';
+  validatePessoa,
+} from '../helpers/pessoaHelpers.js';
+import {
+  existsById,
+  parseRouteId,
+  queryBusca,
+  queryString,
+  trimOrNull,
+} from '../helpers/routeHelpers.js';
+
+const TABLE = 'pessoas';
+const PESSOA_SELECT = `
+  SELECT id, nome, cpf, tipo, telefone, email, observacoes, criado_em
+  FROM pessoas
+`;
+const MSG_NAO_ENCONTRADO = 'Pessoa não encontrada.';
 
 /**
  * @param {import('mysql2/promise').Pool} pool
@@ -16,11 +30,10 @@ export function pessoasRouter(pool) {
   r.get(
     '/',
     asyncHandler(async (req, res) => {
-      const tipo = typeof req.query.tipo === 'string' ? req.query.tipo : undefined;
-      const busca = typeof req.query.busca === 'string' ? req.query.busca : undefined;
+      const tipo = queryString(req, 'tipo');
+      const busca = queryBusca(req);
 
-      let sql =
-        'SELECT id, nome, cpf, tipo, telefone, email, observacoes, criado_em FROM pessoas WHERE 1=1';
+      let sql = `${PESSOA_SELECT} WHERE 1=1`;
       const params = [];
 
       if (tipo && tipo.trim() !== '' && tipo !== 'todos') {
@@ -28,7 +41,7 @@ export function pessoasRouter(pool) {
         params.push(tipo);
       }
 
-      if (busca && busca.trim()) {
+      if (busca?.trim()) {
         const raw = busca.trim();
         const qLower = `%${raw.toLowerCase()}%`;
         const qAny = `%${raw}%`;
@@ -44,33 +57,27 @@ export function pessoasRouter(pool) {
       sql += ' ORDER BY criado_em DESC, nome ASC';
 
       const [rows] = await pool.query(sql, params);
-      res.json(rows.map(toDto));
+      res.json(rows.map(toPessoaDto));
     })
   );
 
   r.get(
     '/:id',
     asyncHandler(async (req, res) => {
-      const id = Number(req.params.id);
-      if (!Number.isInteger(id) || id < 1) {
-        return res.status(404).json({ mensagem: 'Não encontrado.' });
-      }
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      const [rows] = await pool.query(
-        'SELECT id, nome, cpf, tipo, telefone, email, observacoes, criado_em FROM pessoas WHERE id = ?',
-        [id]
-      );
+      const [rows] = await pool.query(`${PESSOA_SELECT} WHERE id = ?`, [id]);
+      if (!rows.length) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      if (!rows.length)
-        return res.status(404).json({ mensagem: 'Não encontrado.' });
-      res.json(toDto(rows[0]));
+      res.json(toPessoaDto(rows[0]));
     })
   );
 
   r.post(
     '/',
     asyncHandler(async (req, res) => {
-      const v = validateSalvarPessoa(req.body);
+      const v = validatePessoa(req.body);
       if (!v.ok) return res.status(400).json({ mensagem: v.error });
 
       const { nome, cpf, tipo, telefone, email, obs } = req.body;
@@ -79,27 +86,17 @@ export function pessoasRouter(pool) {
         return res.status(409).json({ mensagem: 'CPF já cadastrado.' });
       }
 
-      const hoje = new Date();
-      const criadoEm = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
-
-      const emailVal =
-        typeof email === 'string' && email.trim() ? email.trim() : null;
-      const obsVal =
-        typeof obs === 'string' && obs.trim() ? obs.trim() : null;
-
       const [result] = await pool.query(
         `INSERT INTO pessoas (nome, cpf, tipo, telefone, email, observacoes, criado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [nome.trim(), cpf.trim(), tipo, telefone.trim(), emailVal, obsVal, criadoEm]
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE)`,
+        [nome.trim(), cpfDigits, tipo, telefone.trim(), trimOrNull(email), trimOrNull(obs)]
       );
 
-      const insertId = result.insertId;
-      const [created] = await pool.query(
-        'SELECT id, nome, cpf, tipo, telefone, email, observacoes, criado_em FROM pessoas WHERE id = ?',
-        [insertId]
-      );
+      const [created] = await pool.query(`${PESSOA_SELECT} WHERE id = ?`, [
+        result.insertId,
+      ]);
 
-      const dto = toDto(created[0]);
+      const dto = toPessoaDto(created[0]);
       res.status(201).location(`/api/pessoas/${dto.id}`).json(dto);
     })
   );
@@ -107,19 +104,15 @@ export function pessoasRouter(pool) {
   r.put(
     '/:id',
     asyncHandler(async (req, res) => {
-      const id = Number(req.params.id);
-      if (!Number.isInteger(id) || id < 1) {
-        return res.status(404).json({ mensagem: 'Não encontrado.' });
-      }
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      const v = validateSalvarPessoa(req.body);
+      const v = validatePessoa(req.body);
       if (!v.ok) return res.status(400).json({ mensagem: v.error });
 
-      const [existing] = await pool.query('SELECT id FROM pessoas WHERE id = ?', [
-        id,
-      ]);
-      if (!existing.length)
-        return res.status(404).json({ mensagem: 'Não encontrado.' });
+      if (!(await existsById(pool, TABLE, id))) {
+        return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
+      }
 
       const { nome, cpf, tipo, telefone, email, obs } = req.body;
       const cpfDigits = normalizeCpf(cpf);
@@ -127,32 +120,22 @@ export function pessoasRouter(pool) {
         return res.status(409).json({ mensagem: 'CPF já cadastrado.' });
       }
 
-      const emailVal =
-        typeof email === 'string' && email.trim() ? email.trim() : null;
-      const obsVal =
-        typeof obs === 'string' && obs.trim() ? obs.trim() : null;
-
       await pool.query(
         `UPDATE pessoas SET nome = ?, cpf = ?, tipo = ?, telefone = ?, email = ?, observacoes = ?
        WHERE id = ?`,
-        [nome.trim(), cpf.trim(), tipo, telefone.trim(), emailVal, obsVal, id]
+        [nome.trim(), cpfDigits, tipo, telefone.trim(), trimOrNull(email), trimOrNull(obs), id]
       );
 
-      const [rows] = await pool.query(
-        'SELECT id, nome, cpf, tipo, telefone, email, observacoes, criado_em FROM pessoas WHERE id = ?',
-        [id]
-      );
-      res.json(toDto(rows[0]));
+      const [rows] = await pool.query(`${PESSOA_SELECT} WHERE id = ?`, [id]);
+      res.json(toPessoaDto(rows[0]));
     })
   );
 
   r.delete(
     '/:id',
     asyncHandler(async (req, res) => {
-      const id = Number(req.params.id);
-      if (!Number.isInteger(id) || id < 1) {
-        return res.status(404).end();
-      }
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).end();
 
       const [result] = await pool.query('DELETE FROM pessoas WHERE id = ?', [id]);
       if (result.affectedRows === 0) return res.status(404).end();

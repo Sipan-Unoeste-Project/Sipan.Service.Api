@@ -1,10 +1,13 @@
-@Sipan.Service.Api_HostAddress = http://localhost:5089
+@host = http://localhost:5089
 
 ### Listar pessoas
-GET {{Sipan.Service.Api_HostAddress}}/api/pessoas
+GET {{host}}/api/pessoas
+
+### Buscar pessoas
+GET {{host}}/api/pessoas?tipo=doador&busca=maria
 
 ### Criar pessoa
-POST {{Sipan.Service.Api_HostAddress}}/api/pessoas
+POST {{host}}/api/pessoas
 Content-Type: application/json
 
 {
@@ -15,3 +18,68 @@ Content-Type: application/json
   "email": "maria@email.com",
   "obs": "Teste via API"
 }
+
+### Listar animais
+GET {{host}}/api/animais
+
+### Buscar animais
+GET {{host}}/api/animais?busca=rex&status=Disponível
+
+### Criar animal
+POST {{host}}/api/animais
+Content-Type: application/json
+
+{
+  "nome": "Rex",
+  "especie": "Cão",
+  "raca": "SRD",
+  "sexo": "Macho",
+  "porte": "Médio",
+  "castrado": true,
+  "status": "Disponível"
+}
+
+### Listar funcionários
+GET {{host}}/api/funcionarios
+
+### Criar funcionário
+POST {{host}}/api/funcionarios
+Content-Type: application/json
+
+{
+  "nome": "Ana Souza",
+  "cpf": "987.654.321-00",
+  "cargo": "Veterinária",
+  "telefone": "(11) 91234-5678",
+  "status": "Ativo"
+}
+
+### Listar usuários
+GET {{host}}/api/usuarios
+
+### Criar usuário
+POST {{host}}/api/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Admin SIPAN",
+  "login": "admin",
+  "email": "admin@sipan.local",
+  "senhaHash": "hash_exemplo",
+  "permissao": "admin",
+  "status": "Ativo"
+}
+
+### APAC – listar estoque
+GET {{host}}/api/estoque
+
+### APAC – ajustar quantidade
+PATCH {{host}}/api/estoque/1/quantidade
+Content-Type: application/json
+
+{
+  "delta": -1
+}
+
+### APAC – listar campanhas
+GET {{host}}/api/campanhas
