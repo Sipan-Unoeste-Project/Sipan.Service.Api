@@ -1,4 +1,4 @@
-const CPF_TABLES = new Set(['pessoas', 'funcionarios']);
+const CPF_TABLES = new Set(['pessoas', 'voluntarios']);
 
 /** @param {string} cpf */
 export function normalizeCpf(cpf) {
@@ -13,7 +13,7 @@ export function formatCpf(digits) {
 
 /**
  * @param {import('mysql2/promise').Pool} pool
- * @param {'pessoas' | 'funcionarios'} table
+ * @param {'pessoas' | 'voluntarios'} table
  * @param {string} cpfDigits
  * @param {number | null} ignoreId
  */

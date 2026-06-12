@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { asyncHandler } from '../asyncHandler.js';
 import { normalizeCpf } from '../helpers/cpfHelpers.js';
 import {
-  toFuncionarioDto,
-  cpfFuncionarioExists,
-  validateFuncionario,
-} from '../helpers/funcionarioHelpers.js';
+  toVoluntarioDto,
+  cpfVoluntarioExists,
+  validateVoluntario,
+} from '../helpers/voluntarioHelpers.js';
 import {
   existsById,
   parseRouteId,
@@ -15,17 +15,17 @@ import {
   trimOrNull,
 } from '../helpers/routeHelpers.js';
 
-const TABLE = 'funcionarios';
-const FUNCIONARIO_SELECT = `
+const TABLE = 'voluntarios';
+const VOLUNTARIO_SELECT = `
   SELECT id, nome, cpf, cargo, telefone, status
-  FROM funcionarios
+  FROM voluntarios
 `;
-const MSG_NAO_ENCONTRADO = 'Funcionário não encontrado.';
+const MSG_NAO_ENCONTRADO = 'Voluntário não encontrado.';
 
 /**
  * @param {import('mysql2/promise').Pool} pool
  */
-export function funcionariosRouter(pool) {
+export function voluntariosRouter(pool) {
   const r = Router();
 
   r.get(
@@ -34,7 +34,7 @@ export function funcionariosRouter(pool) {
       const busca = queryBusca(req, ['nome']);
       const status = queryString(req, 'status');
 
-      let sql = `${FUNCIONARIO_SELECT} WHERE 1=1`;
+      let sql = `${VOLUNTARIO_SELECT} WHERE 1=1`;
       const params = [];
 
       if (busca?.trim()) {
@@ -56,7 +56,7 @@ export function funcionariosRouter(pool) {
       sql += ' ORDER BY nome ASC';
 
       const [rows] = await pool.query(sql, params);
-      res.json(rows.map(toFuncionarioDto));
+      res.json(rows.map(toVoluntarioDto));
     })
   );
 
@@ -66,27 +66,27 @@ export function funcionariosRouter(pool) {
       const id = parseRouteId(req.params.id);
       if (!id) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      const [rows] = await pool.query(`${FUNCIONARIO_SELECT} WHERE id = ?`, [id]);
+      const [rows] = await pool.query(`${VOLUNTARIO_SELECT} WHERE id = ?`, [id]);
       if (!rows.length) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      res.json(toFuncionarioDto(rows[0]));
+      res.json(toVoluntarioDto(rows[0]));
     })
   );
 
   r.post(
     '/',
     asyncHandler(async (req, res) => {
-      const v = validateFuncionario(req.body);
+      const v = validateVoluntario(req.body);
       if (!v.ok) return res.status(400).json({ mensagem: v.error });
 
       const { nome, cpf, cargo, telefone, status } = req.body;
       const cpfDigits = normalizeCpf(cpf);
-      if (await cpfFuncionarioExists(pool, cpfDigits, null)) {
+      if (await cpfVoluntarioExists(pool, cpfDigits, null)) {
         return res.status(409).json({ mensagem: 'CPF já cadastrado.' });
       }
 
       const [result] = await pool.query(
-        `INSERT INTO funcionarios (nome, cpf, cargo, telefone, status)
+        `INSERT INTO voluntarios (nome, cpf, cargo, telefone, status)
        VALUES (?, ?, ?, ?, ?)`,
         [
           nome.trim(),
@@ -97,12 +97,12 @@ export function funcionariosRouter(pool) {
         ]
       );
 
-      const [created] = await pool.query(`${FUNCIONARIO_SELECT} WHERE id = ?`, [
+      const [created] = await pool.query(`${VOLUNTARIO_SELECT} WHERE id = ?`, [
         result.insertId,
       ]);
 
-      const dto = toFuncionarioDto(created[0]);
-      res.status(201).location(`/api/funcionarios/${dto.id}`).json(dto);
+      const dto = toVoluntarioDto(created[0]);
+      res.status(201).location(`/api/voluntarios/${dto.id}`).json(dto);
     })
   );
 
@@ -112,7 +112,7 @@ export function funcionariosRouter(pool) {
       const id = parseRouteId(req.params.id);
       if (!id) return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
 
-      const v = validateFuncionario(req.body);
+      const v = validateVoluntario(req.body);
       if (!v.ok) return res.status(400).json({ mensagem: v.error });
 
       if (!(await existsById(pool, TABLE, id))) {
@@ -121,12 +121,12 @@ export function funcionariosRouter(pool) {
 
       const { nome, cpf, cargo, telefone, status } = req.body;
       const cpfDigits = normalizeCpf(cpf);
-      if (await cpfFuncionarioExists(pool, cpfDigits, id)) {
+      if (await cpfVoluntarioExists(pool, cpfDigits, id)) {
         return res.status(409).json({ mensagem: 'CPF já cadastrado.' });
       }
 
       await pool.query(
-        `UPDATE funcionarios
+        `UPDATE voluntarios
        SET nome = ?, cpf = ?, cargo = ?, telefone = ?, status = ?
        WHERE id = ?`,
         [
@@ -139,8 +139,8 @@ export function funcionariosRouter(pool) {
         ]
       );
 
-      const [rows] = await pool.query(`${FUNCIONARIO_SELECT} WHERE id = ?`, [id]);
-      res.json(toFuncionarioDto(rows[0]));
+      const [rows] = await pool.query(`${VOLUNTARIO_SELECT} WHERE id = ?`, [id]);
+      res.json(toVoluntarioDto(rows[0]));
     })
   );
 
@@ -150,7 +150,7 @@ export function funcionariosRouter(pool) {
       const id = parseRouteId(req.params.id);
       if (!id) return res.status(404).end();
 
-      const [result] = await pool.query('DELETE FROM funcionarios WHERE id = ?', [id]);
+      const [result] = await pool.query('DELETE FROM voluntarios WHERE id = ?', [id]);
       if (result.affectedRows === 0) return res.status(404).end();
       res.status(204).end();
     })

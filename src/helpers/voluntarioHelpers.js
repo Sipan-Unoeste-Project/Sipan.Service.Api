@@ -2,7 +2,7 @@ import { cpfExistsInTable, formatCpf, normalizeCpf } from './cpfHelpers.js';
 import { fail, ok, requireObject } from './validationHelpers.js';
 
 /** @param {import('mysql2').RowDataPacket} row */
-export function toFuncionarioDto(row) {
+export function toVoluntarioDto(row) {
   const cpfDigits = normalizeCpf(row.cpf);
 
   return {
@@ -20,12 +20,12 @@ export function toFuncionarioDto(row) {
  * @param {string} cpfDigits
  * @param {number | null} ignoreId
  */
-export async function cpfFuncionarioExists(pool, cpfDigits, ignoreId) {
-  return cpfExistsInTable(pool, 'funcionarios', cpfDigits, ignoreId);
+export async function cpfVoluntarioExists(pool, cpfDigits, ignoreId) {
+  return cpfExistsInTable(pool, 'voluntarios', cpfDigits, ignoreId);
 }
 
 /** @param {unknown} body */
-export function validateFuncionario(body) {
+export function validateVoluntario(body) {
   const invalid = requireObject(body);
   if (invalid) return invalid;
 

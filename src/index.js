@@ -4,7 +4,7 @@ import express from 'express';
 import { createPool } from './database/db.js';
 import { pessoasRouter } from './routes/pessoasRoutes.js';
 import { animaisRouter } from './routes/animaisRoutes.js';
-import { funcionariosRouter } from './routes/funcionariosRoutes.js';
+import { voluntariosRouter } from './routes/voluntariosRoutes.js';
 import { usuariosRouter } from './routes/usuariosRoutes.js';
 import { apacEstoqueRouter } from './routes/apacEstoqueRoutes.js';
 import { apacCampanhasRouter } from './routes/apacCampanhasRoutes.js';
@@ -38,7 +38,7 @@ const pool = createPool();
 // SIPAN
 app.use('/api/pessoas', pessoasRouter(pool));
 app.use('/api/animais', animaisRouter(pool));
-app.use('/api/funcionarios', funcionariosRouter(pool));
+app.use('/api/voluntarios', voluntariosRouter(pool));
 app.use('/api/usuarios', usuariosRouter(pool));
 
 // APAC
