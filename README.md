@@ -50,6 +50,7 @@ src/
 └── routes/               # rotas HTTP (todas registradas no index.js)
     ├── pessoasRoutes.js
     ├── animaisRoutes.js
+    ├── adocoesRoutes.js
     ├── funcionariosRoutes.js
     ├── usuariosRoutes.js
     ├── apacEstoqueRoutes.js
@@ -64,6 +65,21 @@ Schemas MySQL (banco `sipan`):
 
 1. Tabelas SIPAN + APAC completas: use `Sipan.Service.Web/database/schema.sql`, **ou**
 2. `database/apac_schema.sql` (estoque/campanhas) + `database/apac_extended_schema.sql` (doações, financeiro, despesas, saúde)
+
+Migrações para bancos já existentes (`database/migrations/`):
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `001_apac_estoque_limite_baixo.sql` | Coluna `limite_baixo_estoque` em `apac_estoque` |
+| `002_pessoas_endereco.sql` | Colunas `cep`, `endereco`, `numero`, `bairro`, `cidade`, `estado` em `pessoas` |
+| `003_pessoa_tipos.sql` | Tabela `pessoa_tipos`; remove coluna `tipo` de `pessoas` (vários perfis por CPF) |
+| `004_solicitacoes_adocao.sql` | Tabela `solicitacoes_adocao` (solicitações de adoção) |
+
+Aplicar migração no Docker (exemplo):
+
+```powershell
+Get-Content database/migrations/004_solicitacoes_adocao.sql | docker exec -i sipan-mysql mysql -u sipan -psipan_dev_2026 sipan
+```
 
 ## Padrões de desenvolvimento
 
@@ -87,6 +103,8 @@ Schemas MySQL (banco `sipan`):
 | PUT | `/api/pessoas/{id}` | Atualizar |
 | DELETE | `/api/pessoas/{id}` | Excluir |
 
+POST/PUT aceitam `tipos: ["doador", "adotante"]` (mínimo 1). A resposta traz `tipos: []`. O filtro `?tipo=doador` lista quem tem aquele perfil (quem tem os dois aparece em ambos). O campo legado `"tipo": "doador"` ainda é aceito.
+
 ## Endpoints – Animais
 
 | Método | Rota | Descrição |
@@ -98,6 +116,35 @@ Schemas MySQL (banco `sipan`):
 | DELETE | `/api/animais/{id}` | Excluir |
 
 > O parâmetro `search` em animais ainda é aceito por compatibilidade, mas prefira `busca`.
+
+## Endpoints – Adoções
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/adocoes` | Lista (`?busca=maria&status=Pendente`) |
+| GET | `/api/adocoes/{id}` | Detalhe |
+| POST | `/api/adocoes` | Nova solicitação |
+| PUT | `/api/adocoes/{id}` | Atualizar |
+| DELETE | `/api/adocoes/{id}` | Excluir |
+
+POST exige `aceitaTermo: true`. A resposta inclui `animalNome` e `animalEspecie` (join com `animais`). Use um `animalId` existente.
+
+Exemplo de corpo:
+
+```json
+{
+  "nomeAdotante": "Maria Silva",
+  "cpf": "529.982.247-25",
+  "telefone": "(11) 99999-9999",
+  "email": "maria@email.com",
+  "animalId": 1,
+  "motivo": "Quero dar um lar",
+  "tipoResidencia": "Casa com quintal",
+  "aceitaTermo": true
+}
+```
+
+No front (`Sipan.Service.Web`), confirme `VITE_API_URL=http://localhost:5089` e acesse **Adoções → Nova Solicitação**.
 
 ## Endpoints – Funcionários
 
@@ -167,12 +214,20 @@ Corpo JSON (POST/PUT pessoas), igual ao formulário do frontend:
 {
   "nome": "Maria da Silva",
   "cpf": "123.456.789-00",
-  "tipo": "doador",
+  "tipos": ["doador", "adotante"],
   "telefone": "(11) 98765-4321",
   "email": "maria@email.com",
+  "cep": "11990-000",
+  "endereco": "Rua das Palmeiras",
+  "numero": "123",
+  "bairro": "Centro",
+  "cidade": "Cananéia",
+  "estado": "SP",
   "obs": "Observações opcionais"
 }
 ```
+
+Campos de endereço são opcionais. `tipos` é array com `doador` e/ou `adotante` (mínimo 1). Aceita corpo legado com `"tipo": "doador"` único. `cep` aceita com ou sem máscara; resposta devolve `12345-678`. `estado` com 2 letras (UF).
 
 Resposta usa `criadoEm` no formato `yyyy-MM-dd`.
 

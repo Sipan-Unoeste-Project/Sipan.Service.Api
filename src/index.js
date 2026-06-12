@@ -12,6 +12,7 @@ import { apacDoacoesRouter } from './routes/apacDoacoesRoutes.js';
 import { apacFinanceiroRouter } from './routes/apacFinanceiroRoutes.js';
 import { apacDespesasRouter } from './routes/apacDespesasRoutes.js';
 import { apacSaudeRouter } from './routes/apacSaudeRoutes.js';
+import { adocoesRouter } from './routes/adocoesRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 5089);
@@ -40,6 +41,7 @@ app.use('/api/pessoas', pessoasRouter(pool));
 app.use('/api/animais', animaisRouter(pool));
 app.use('/api/voluntarios', voluntariosRouter(pool));
 app.use('/api/usuarios', usuariosRouter(pool));
+app.use('/api/adocoes', adocoesRouter(pool));
 
 // APAC
 app.use('/api/estoque', apacEstoqueRouter(pool));
@@ -63,7 +65,7 @@ app.use((err, _req, res, _next) => {
   if (err.code === 'ER_NO_SUCH_TABLE') {
     return res.status(503).json({
       mensagem:
-        'Tabela do banco não encontrada. Execute database/apac_extended_schema.sql (ou schema.sql completo) no MySQL.',
+        'Tabela do banco não encontrada. Execute as migrações em database/migrations/ (ex.: 004_solicitacoes_adocao.sql) ou o schema.sql completo do Sipan.Service.Web.',
     });
   }
 

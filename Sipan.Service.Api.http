@@ -13,9 +13,15 @@ Content-Type: application/json
 {
   "nome": "Maria da Silva",
   "cpf": "123.456.789-09",
-  "tipo": "doador",
+  "tipos": ["doador", "adotante"],
   "telefone": "(11) 98765-4321",
   "email": "maria@email.com",
+  "cep": "11990-000",
+  "endereco": "Rua das Palmeiras",
+  "numero": "123",
+  "bairro": "Centro",
+  "cidade": "Cananéia",
+  "estado": "SP",
   "obs": "Teste via API"
 }
 
@@ -68,6 +74,27 @@ Content-Type: application/json
   "senhaHash": "hash_exemplo",
   "permissao": "admin",
   "status": "Ativo"
+}
+
+### Listar solicitações de adoção
+GET {{host}}/api/adocoes
+
+### Buscar adoções
+GET {{host}}/api/adocoes?busca=maria&status=Pendente
+
+### Criar solicitação de adoção (use animalId existente)
+POST {{host}}/api/adocoes
+Content-Type: application/json
+
+{
+  "nomeAdotante": "Maria Silva",
+  "cpf": "529.982.247-25",
+  "telefone": "(11) 99999-9999",
+  "email": "maria@email.com",
+  "animalId": 1,
+  "motivo": "Quero dar um lar",
+  "tipoResidencia": "Casa com quintal",
+  "aceitaTermo": true
 }
 
 ### APAC – listar estoque
