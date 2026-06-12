@@ -3,6 +3,7 @@ const TABLES = new Set([
   'animais',
   'funcionarios',
   'usuarios',
+  'solicitacoes_adocao',
   'apac_estoque',
   'apac_campanhas',
   'apac_doacoes',
