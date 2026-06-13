@@ -45,11 +45,11 @@ Content-Type: application/json
   "status": "Disponível"
 }
 
-### Listar funcionários
-GET {{host}}/api/funcionarios
+### Listar voluntários
+GET {{host}}/api/voluntarios
 
-### Criar funcionário
-POST {{host}}/api/funcionarios
+### Criar voluntário
+POST {{host}}/api/voluntarios
 Content-Type: application/json
 
 {

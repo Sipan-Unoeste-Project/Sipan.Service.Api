@@ -65,7 +65,7 @@ app.use((err, _req, res, _next) => {
   if (err.code === 'ER_NO_SUCH_TABLE') {
     return res.status(503).json({
       mensagem:
-        'Tabela do banco não encontrada. Execute as migrações em database/migrations/ (ex.: 004_solicitacoes_adocao.sql) ou o schema.sql completo do Sipan.Service.Web.',
+        'Tabela do banco não encontrada. No diretório Sipan.Service.Api, execute: npm run migrate',
     });
   }
 

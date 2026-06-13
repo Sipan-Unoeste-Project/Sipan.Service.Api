@@ -31,6 +31,20 @@ DB_USER=sipan
 DB_PASSWORD=sipan_dev_2026
 ```
 
+## Atualizar o banco (obrigatório após clonar)
+
+O Docker só aplica `schema.sql` na **primeira** criação do volume. Quem já tinha o MySQL rodando ou clonou o repositório precisa aplicar as migrações pendentes:
+
+```bash
+npm run migrate
+```
+
+Isso cria/atualiza tabelas como `pessoa_tipos` e `solicitacoes_adocao` e registra o que já foi aplicado em `schema_migrations`.
+
+> **Erro `Table 'sipan.pessoa_tipos' doesn't exist` ou `solicitacoes_adocao`?** Execute `npm run migrate` e reinicie a API.
+
+Banco **novo do zero** (sem volume antigo): suba o Docker no Web e rode `npm run migrate` uma vez (migrações idempotentes — no banco já atualizado, tudo vira `skip`).
+
 ## Executar
 
 ```bash
@@ -51,7 +65,7 @@ src/
     ├── pessoasRoutes.js
     ├── animaisRoutes.js
     ├── adocoesRoutes.js
-    ├── funcionariosRoutes.js
+    ├── voluntariosRoutes.js
     ├── usuariosRoutes.js
     ├── apacEstoqueRoutes.js
     ├── apacCampanhasRoutes.js
@@ -74,8 +88,16 @@ Migrações para bancos já existentes (`database/migrations/`):
 | `002_pessoas_endereco.sql` | Colunas `cep`, `endereco`, `numero`, `bairro`, `cidade`, `estado` em `pessoas` |
 | `003_pessoa_tipos.sql` | Tabela `pessoa_tipos`; remove coluna `tipo` de `pessoas` (vários perfis por CPF) |
 | `004_solicitacoes_adocao.sql` | Tabela `solicitacoes_adocao` (solicitações de adoção) |
+| `005_adocao_status_varchar.sql` | Corrige coluna `status` (VARCHAR, acentos no Windows) |
+| `006_rename_funcionarios_voluntarios.sql` | Renomeia tabela `funcionarios` → `voluntarios` |
 
-Aplicar migração no Docker (exemplo):
+Aplicar **todas** de uma vez (recomendado):
+
+```bash
+npm run migrate
+```
+
+Alternativa manual (Docker):
 
 ```powershell
 Get-Content database/migrations/004_solicitacoes_adocao.sql | docker exec -i sipan-mysql mysql -u sipan -psipan_dev_2026 sipan
@@ -146,15 +168,15 @@ Exemplo de corpo:
 
 No front (`Sipan.Service.Web`), confirme `VITE_API_URL=http://localhost:5089` e acesse **Adoções → Nova Solicitação**.
 
-## Endpoints – Funcionários
+## Endpoints – Voluntários
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/api/funcionarios` | Lista (`?busca=nome&status=Ativo`) |
-| GET | `/api/funcionarios/{id}` | Detalhe |
-| POST | `/api/funcionarios` | Criar |
-| PUT | `/api/funcionarios/{id}` | Atualizar |
-| DELETE | `/api/funcionarios/{id}` | Excluir |
+| GET | `/api/voluntarios` | Lista (`?busca=nome&status=Ativo`) |
+| GET | `/api/voluntarios/{id}` | Detalhe |
+| POST | `/api/voluntarios` | Criar |
+| PUT | `/api/voluntarios/{id}` | Atualizar |
+| DELETE | `/api/voluntarios/{id}` | Excluir |
 
 > O parâmetro `nome` na query ainda é aceito por compatibilidade; prefira `busca`.
 

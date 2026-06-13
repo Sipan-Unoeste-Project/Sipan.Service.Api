@@ -1,7 +1,7 @@
 const TABLES = new Set([
   'pessoas',
   'animais',
-  'funcionarios',
+  'voluntarios',
   'usuarios',
   'solicitacoes_adocao',
   'apac_estoque',
