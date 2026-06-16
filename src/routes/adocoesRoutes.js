@@ -1,10 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../asyncHandler.js';
-import {
-  toAdocaoDto,
-  validateAdocao,
-  assertPessoaAdotante,
-} from '../helpers/adocaoHelpers.js';
+import { toAdocaoDto, validateAdocao } from '../helpers/adocaoHelpers.js';
 import {
   existsById,
   parseRouteId,
@@ -16,7 +12,7 @@ import { normalizeCpf, formatCpf } from '../helpers/cpfHelpers.js';
 
 const TABLE = 'solicitacoes_adocao';
 const ADOCAO_SELECT = `
-  SELECT s.id, s.pessoa_id, s.nome_adotante, s.cpf, s.telefone, s.email, s.endereco,
+  SELECT s.id, s.nome_adotante, s.cpf, s.telefone, s.email, s.endereco,
          s.animal_id, s.motivo, s.tem_outros_animais, s.tem_criancas,
          s.tipo_residencia, s.aceita_termo, s.status, s.data_solicitacao,
          a.nome AS animal_nome, a.especie AS animal_especie
@@ -88,7 +84,6 @@ export function adocoesRouter(pool) {
         email,
         endereco,
         animalId,
-        pessoaId,
         motivo,
         temOutrosAnimais,
         temCriancas,
@@ -101,19 +96,15 @@ export function adocoesRouter(pool) {
         return res.status(400).json({ mensagem: 'Animal não encontrado.' });
       }
 
-      const errPessoa = await assertPessoaAdotante(pool, pessoaId ?? null);
-      if (errPessoa) return res.status(400).json({ mensagem: errPessoa });
-
       const cpfDigits = normalizeCpf(cpf);
       const cpfStored = formatCpf(cpfDigits);
 
       const [result] = await pool.query(
         `INSERT INTO solicitacoes_adocao
-      (pessoa_id, nome_adotante, cpf, telefone, email, endereco, animal_id, motivo,
+      (nome_adotante, cpf, telefone, email, endereco, animal_id, motivo,
        tem_outros_animais, tem_criancas, tipo_residencia, aceita_termo, status, data_solicitacao)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         [
-          pessoaId ?? null,
           nomeAdotante.trim(),
           cpfStored,
           telefone.trim(),
@@ -158,7 +149,6 @@ export function adocoesRouter(pool) {
         email,
         endereco,
         animalId,
-        pessoaId,
         motivo,
         temOutrosAnimais,
         temCriancas,
@@ -171,20 +161,16 @@ export function adocoesRouter(pool) {
         return res.status(400).json({ mensagem: 'Animal não encontrado.' });
       }
 
-      const errPessoa = await assertPessoaAdotante(pool, pessoaId ?? null);
-      if (errPessoa) return res.status(400).json({ mensagem: errPessoa });
-
       const cpfDigits = normalizeCpf(cpf);
       const cpfStored = formatCpf(cpfDigits);
 
       await pool.query(
         `UPDATE solicitacoes_adocao SET
-        pessoa_id = ?, nome_adotante = ?, cpf = ?, telefone = ?, email = ?, endereco = ?,
+        nome_adotante = ?, cpf = ?, telefone = ?, email = ?, endereco = ?,
         animal_id = ?, motivo = ?, tem_outros_animais = ?, tem_criancas = ?,
         tipo_residencia = ?, aceita_termo = ?, status = ?
       WHERE id = ?`,
         [
-          pessoaId ?? null,
           nomeAdotante.trim(),
           cpfStored,
           telefone.trim(),
