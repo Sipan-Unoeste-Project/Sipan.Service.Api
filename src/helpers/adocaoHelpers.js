@@ -23,6 +23,7 @@ export function toAdocaoDto(row) {
 
   return {
     id: Number(row.id),
+    pessoaId: row.pessoa_id != null ? Number(row.pessoa_id) : null,
     nomeAdotante: row.nome_adotante,
     cpf: cpfDigits.length === 11 ? formatCpf(cpfDigits) : row.cpf,
     telefone: row.telefone,
@@ -41,6 +42,27 @@ export function toAdocaoDto(row) {
   };
 }
 
+/**
+ * @param {import('mysql2/promise').Pool} pool
+ * @param {number | null | undefined} pessoaId
+ */
+export async function assertPessoaAdotante(pool, pessoaId) {
+  if (pessoaId == null) return null;
+
+  const [rows] = await pool.query(
+    `SELECT p.id FROM pessoas p
+     INNER JOIN pessoa_tipos pt ON pt.pessoa_id = p.id AND pt.tipo = 'adotante'
+     WHERE p.id = ?
+     LIMIT 1`,
+    [pessoaId]
+  );
+
+  if (!rows.length) {
+    return 'Pessoa não encontrada ou não possui perfil de adotante.';
+  }
+  return null;
+}
+
 /** @param {unknown} body */
 export function validateAdocao(body, { isUpdate = false } = {}) {
   const invalid = requireObject(body);
@@ -53,6 +75,7 @@ export function validateAdocao(body, { isUpdate = false } = {}) {
     email,
     endereco,
     animalId,
+    pessoaId,
     motivo,
     temOutrosAnimais,
     temCriancas,
@@ -60,6 +83,12 @@ export function validateAdocao(body, { isUpdate = false } = {}) {
     aceitaTermo,
     status,
   } = /** @type {Record<string, unknown>} */ (body);
+
+  if (pessoaId != null) {
+    if (typeof pessoaId !== 'number' || !Number.isInteger(pessoaId) || pessoaId <= 0) {
+      return fail('Campo pessoaId inválido.');
+    }
+  }
 
   if (typeof nomeAdotante !== 'string' || !nomeAdotante.trim()) {
     return fail('Campo nomeAdotante é obrigatório.');

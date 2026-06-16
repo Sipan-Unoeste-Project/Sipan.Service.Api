@@ -1,6 +1,80 @@
 # Sipan.Service.Api
 
-API REST do SIPAN (Node.js + Express + MySQL).
+API REST do **SIPAN** — Sistema Integrado de Proteção Animal (Node.js + Express + MySQL).
+
+## GRUPO 3
+
+### Integrantes
+
+| Nome | RA |
+|------|-----|
+| Felipe Augusto Soares | 10482511137 |
+| Igor Silva Pereira | 10482510793 |
+| Lillian Martins Cruz | 10482519690 |
+| Robson Junior Biffe Rodrigues | 10482510102 |
+
+### Descrição do projeto
+
+O **SIPAN** é um sistema web para gestão de abrigos e ONGs de proteção animal. O projeto é dividido em dois repositórios complementares:
+
+- **Sipan.Service.Api** (este repositório) — backend REST que persiste dados no MySQL.
+- **Sipan.Service.Web** — frontend React (Vite) consumindo a API.
+
+Funcionalidades principais:
+
+- **Cadastros SIPAN:** pessoas (doadores/adotantes), animais, voluntários, usuários do sistema e solicitações de adoção.
+- **Módulo APAC:** estoque, campanhas, doações, financeiro, despesas, saúde animal e balancete.
+- **Integração completa:** front e API compartilham o banco `sipan` via Docker; migrações versionadas garantem que todos os integrantes atualizem o schema após o `git pull`.
+
+### Organização deste repositório
+
+```
+Sipan.Service.Api/
+├── src/
+│   ├── index.js                 # Entrada Express, CORS e registro das rotas
+│   ├── asyncHandler.js          # Wrapper async para rotas
+│   ├── database/
+│   │   └── db.js                # Pool de conexão MySQL
+│   ├── helpers/                 # DTOs, validação e regras de negócio
+│   │   ├── pessoaHelpers.js
+│   │   ├── animalHelpers.js
+│   │   ├── voluntarioHelpers.js
+│   │   ├── usuarioHelpers.js
+│   │   ├── adocaoHelpers.js
+│   │   ├── apacEstoqueHelpers.js
+│   │   ├── apacCampanhaHelpers.js
+│   │   ├── routeHelpers.js
+│   │   ├── validationHelpers.js
+│   │   ├── dateHelpers.js
+│   │   └── cpfHelpers.js
+│   └── routes/                  # Endpoints HTTP (CRUD por domínio)
+│       ├── pessoasRoutes.js
+│       ├── animaisRoutes.js
+│       ├── adocoesRoutes.js
+│       ├── voluntariosRoutes.js
+│       ├── usuariosRoutes.js
+│       ├── apacEstoqueRoutes.js
+│       ├── apacCampanhasRoutes.js
+│       ├── apacDoacoesRoutes.js
+│       ├── apacFinanceiroRoutes.js
+│       ├── apacDespesasRoutes.js
+│       └── apacSaudeRoutes.js
+├── database/
+│   ├── apac_schema.sql          # Schema parcial APAC (estoque/campanhas)
+│   ├── apac_extended_schema.sql # Doações, financeiro, despesas, saúde
+│   └── migrations/              # Migrações incrementais (001–006+)
+├── scripts/
+│   └── migrate.js               # Aplica migrações pendentes (`npm run migrate`)
+├── .env.example                 # Variáveis de ambiente (DB, porta)
+├── package.json
+├── Sipan.Service.Api.http       # Requisições de teste (REST Client)
+├── README.md
+└── LICENSE
+```
+
+O schema completo para instalação nova fica em `Sipan.Service.Web/database/schema.sql`.
+
+---
 
 ## Pré-requisitos
 
@@ -53,205 +127,6 @@ npm run dev
 
 API: http://localhost:5089
 
-## Estrutura
-
-```
-src/
-├── index.js              # entrada e registro das rotas
-├── asyncHandler.js
-├── database/db.js
-├── helpers/              # DTOs e validação por domínio
-└── routes/               # rotas HTTP (todas registradas no index.js)
-    ├── pessoasRoutes.js
-    ├── animaisRoutes.js
-    ├── adocoesRoutes.js
-    ├── voluntariosRoutes.js
-    ├── usuariosRoutes.js
-    ├── apacEstoqueRoutes.js
-    ├── apacCampanhasRoutes.js
-    ├── apacDoacoesRoutes.js
-    ├── apacFinanceiroRoutes.js
-    ├── apacDespesasRoutes.js
-    └── apacSaudeRoutes.js
-```
-
-Schemas MySQL (banco `sipan`):
-
-1. Tabelas SIPAN + APAC completas: use `Sipan.Service.Web/database/schema.sql`, **ou**
-2. `database/apac_schema.sql` (estoque/campanhas) + `database/apac_extended_schema.sql` (doações, financeiro, despesas, saúde)
-
-Migrações para bancos já existentes (`database/migrations/`):
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `001_apac_estoque_limite_baixo.sql` | Coluna `limite_baixo_estoque` em `apac_estoque` |
-| `002_pessoas_endereco.sql` | Colunas `cep`, `endereco`, `numero`, `bairro`, `cidade`, `estado` em `pessoas` |
-| `003_pessoa_tipos.sql` | Tabela `pessoa_tipos`; remove coluna `tipo` de `pessoas` (vários perfis por CPF) |
-| `004_solicitacoes_adocao.sql` | Tabela `solicitacoes_adocao` (solicitações de adoção) |
-| `005_adocao_status_varchar.sql` | Corrige coluna `status` (VARCHAR, acentos no Windows) |
-| `006_rename_funcionarios_voluntarios.sql` | Renomeia tabela `funcionarios` → `voluntarios` |
-
-Aplicar **todas** de uma vez (recomendado):
-
-```bash
-npm run migrate
-```
-
-Alternativa manual (Docker):
-
-```powershell
-Get-Content database/migrations/004_solicitacoes_adocao.sql | docker exec -i sipan-mysql mysql -u sipan -psipan_dev_2026 sipan
-```
-
-## Padrões de desenvolvimento
-
-| Camada | Convenção |
-|--------|-----------|
-| Rotas | `src/routes/*Routes.js` — factory `nomeRouter(pool)`, `asyncHandler`, `MSG_NAO_ENCONTRADO` |
-| Helpers de domínio | `to*Dto`, `validate*`, regras de negócio |
-| Helpers compartilhados | `routeHelpers`, `validationHelpers`, `dateHelpers`, `cpfHelpers` |
-| Erros HTTP | `{ mensagem: string }` — 400 validação, 404 não encontrado, 409 conflito, 204 DELETE |
-| Listagem | query `busca` (aliases documentados por rota), filtros opcionais |
-| JSON SIPAN | camelCase (`criadoEm`, `dataNascimento`) |
-| JSON APAC | snake_case (`data_evento`, `limite_baixo_estoque`) — compatível com `Sipan.Service.Web` |
-
-## Endpoints – Pessoas
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/pessoas` | Lista (`?tipo=doador&busca=maria`) |
-| GET | `/api/pessoas/{id}` | Detalhe |
-| POST | `/api/pessoas` | Criar |
-| PUT | `/api/pessoas/{id}` | Atualizar |
-| DELETE | `/api/pessoas/{id}` | Excluir |
-
-POST/PUT aceitam `tipos: ["doador", "adotante"]` (mínimo 1). A resposta traz `tipos: []`. O filtro `?tipo=doador` lista quem tem aquele perfil (quem tem os dois aparece em ambos). O campo legado `"tipo": "doador"` ainda é aceito.
-
-## Endpoints – Animais
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/animais` | Lista (`?busca=nome&status=Disponível`) |
-| GET | `/api/animais/{id}` | Detalhe |
-| POST | `/api/animais` | Criar |
-| PUT | `/api/animais/{id}` | Atualizar |
-| DELETE | `/api/animais/{id}` | Excluir |
-
-> O parâmetro `search` em animais ainda é aceito por compatibilidade, mas prefira `busca`.
-
-## Endpoints – Adoções
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/adocoes` | Lista (`?busca=maria&status=Pendente`) |
-| GET | `/api/adocoes/{id}` | Detalhe |
-| POST | `/api/adocoes` | Nova solicitação |
-| PUT | `/api/adocoes/{id}` | Atualizar |
-| DELETE | `/api/adocoes/{id}` | Excluir |
-
-POST exige `aceitaTermo: true`. A resposta inclui `animalNome` e `animalEspecie` (join com `animais`). Use um `animalId` existente.
-
-Exemplo de corpo:
-
-```json
-{
-  "nomeAdotante": "Maria Silva",
-  "cpf": "529.982.247-25",
-  "telefone": "(11) 99999-9999",
-  "email": "maria@email.com",
-  "animalId": 1,
-  "motivo": "Quero dar um lar",
-  "tipoResidencia": "Casa com quintal",
-  "aceitaTermo": true
-}
-```
-
-No front (`Sipan.Service.Web`), confirme `VITE_API_URL=http://localhost:5089` e acesse **Adoções → Nova Solicitação**.
-
-## Endpoints – Voluntários
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/voluntarios` | Lista (`?busca=nome&status=Ativo`) |
-| GET | `/api/voluntarios/{id}` | Detalhe |
-| POST | `/api/voluntarios` | Criar |
-| PUT | `/api/voluntarios/{id}` | Atualizar |
-| DELETE | `/api/voluntarios/{id}` | Excluir |
-
-> O parâmetro `nome` na query ainda é aceito por compatibilidade; prefira `busca`.
-
-## Endpoints – Usuários
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/usuarios` | Lista (`?busca=joao&status=Ativo`) |
-| GET | `/api/usuarios/{id}` | Detalhe |
-| POST | `/api/usuarios` | Criar |
-| PUT | `/api/usuarios/{id}` | Atualizar |
-| DELETE | `/api/usuarios/{id}` | Excluir |
-
-A senha nunca é retornada nas respostas. No corpo use `senhaHash` (ou `senha_hash` por compatibilidade).
-
-## Endpoints – APAC (estoque e campanhas)
-
-Respostas em **snake_case** para o módulo APAC em `Sipan.Service.Web` (`/apac/estoque`, `/apac/campanhas`).
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/estoque` | Lista itens |
-| GET | `/api/estoque/{id}` | Detalhe |
-| POST | `/api/estoque` | Criar item |
-| PUT | `/api/estoque/{id}` | Atualizar |
-| PATCH | `/api/estoque/{id}/quantidade` | Ajustar quantidade (`{ "delta": 1 }`) |
-| DELETE | `/api/estoque/{id}` | Excluir |
-| GET | `/api/campanhas` | Lista `{ ativas, encerradas }` |
-| GET | `/api/campanhas/{id}` | Detalhe |
-| POST | `/api/campanhas` | Criar |
-| PUT | `/api/campanhas/{id}` | Atualizar |
-| PATCH | `/api/campanhas/{id}/doacao` | Registrar doação (`{ "valor": 100 }`) |
-| PATCH | `/api/campanhas/{id}/encerrar` | Encerrar campanha |
-| DELETE | `/api/campanhas/{id}` | Excluir |
-
-## Endpoints – APAC (doações, financeiro, despesas, saúde)
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/doacoes` | Lista doações (`?busca=`) |
-| POST | `/api/doacoes` | Registrar doação (dinheiro ou produto + itens) |
-| DELETE | `/api/doacoes/{id}` | Excluir |
-| GET | `/api/financeiro` | `{ entradas, saidas }` |
-| POST | `/api/financeiro/entradas` | Nova entrada |
-| POST | `/api/financeiro/saidas` | Nova saída |
-| GET | `/api/despesas` | `{ categorias, despesas }` |
-| POST | `/api/despesas` | Nova despesa |
-| POST | `/api/despesas/categorias` | Nova categoria |
-| DELETE | `/api/despesas/{id}` | Excluir despesa |
-| GET | `/api/saude?animal_id=` | Registros e vacinas do animal |
-| POST | `/api/saude/registros` | Atendimento |
-| POST | `/api/saude/vacinas` | Vacina |
-
-Corpo JSON (POST/PUT pessoas), igual ao formulário do frontend:
-
-```json
-{
-  "nome": "Maria da Silva",
-  "cpf": "123.456.789-00",
-  "tipos": ["doador", "adotante"],
-  "telefone": "(11) 98765-4321",
-  "email": "maria@email.com",
-  "cep": "11990-000",
-  "endereco": "Rua das Palmeiras",
-  "numero": "123",
-  "bairro": "Centro",
-  "cidade": "Cananéia",
-  "estado": "SP",
-  "obs": "Observações opcionais"
-}
-```
-
-Campos de endereço são opcionais. `tipos` é array com `doador` e/ou `adotante` (mínimo 1). Aceita corpo legado com `"tipo": "doador"` único. `cep` aceita com ou sem máscara; resposta devolve `12345-678`. `estado` com 2 letras (UF).
-
-Resposta usa `criadoEm` no formato `yyyy-MM-dd`.
 
 ## Frontend
 
