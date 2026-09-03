@@ -13,6 +13,8 @@ import { apacFinanceiroRouter } from './routes/apacFinanceiroRoutes.js';
 import { apacDespesasRouter } from './routes/apacDespesasRoutes.js';
 import { apacSaudeRouter } from './routes/apacSaudeRoutes.js';
 import { adocoesRouter } from './routes/adocoesRoutes.js';
+import { authRouter } from './routes/authRoutes.js';
+import { requireAuth } from './middleware/requireAuth.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 5089);
@@ -28,13 +30,17 @@ const corsOptions = {
     callback(new Error(`Origem não permitida pelo CORS: ${origin}`));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
 
 const pool = createPool();
+
+app.use(requireAuth);
+
+app.use('/api/auth', authRouter(pool));
 
 // SIPAN
 app.use('/api/pessoas', pessoasRouter(pool));

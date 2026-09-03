@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { asyncHandler } from '../asyncHandler.js';
+import { hashPassword } from '../helpers/passwordHelpers.js';
 import {
   toUsuarioDto,
   loginExists,
-  readSenhaHash,
+  readSenhaPlain,
   validateUsuario,
 } from '../helpers/usuarioHelpers.js';
 import {
@@ -80,11 +81,13 @@ export function usuariosRouter(pool) {
 
       const { nome, login, email, permissao, status } = req.body;
       const loginVal = login.trim();
-      const senhaHash = v.senhaHash;
+      const senha = v.senha;
 
-      if (!senhaHash) {
-        return res.status(400).json({ mensagem: 'Campo senhaHash é obrigatório.' });
+      if (!senha) {
+        return res.status(400).json({ mensagem: 'Campo senha é obrigatório.' });
       }
+
+      const senhaHash = await hashPassword(senha);
 
       if (await loginExists(pool, loginVal, null)) {
         return res.status(409).json({ mensagem: 'Login já cadastrado.' });
@@ -127,7 +130,7 @@ export function usuariosRouter(pool) {
 
       const { nome, login, email, permissao, status } = req.body;
       const loginVal = login.trim();
-      const senhaHash = readSenhaHash(req.body);
+      const senha = readSenhaPlain(req.body);
 
       if (await loginExists(pool, loginVal, id)) {
         return res.status(409).json({ mensagem: 'Login já cadastrado.' });
@@ -136,7 +139,8 @@ export function usuariosRouter(pool) {
       const permissaoVal = trimOrNull(permissao);
       const statusVal = statusOrDefault(status, 'Ativo');
 
-      if (senhaHash) {
+      if (senha) {
+        const senhaHash = await hashPassword(senha);
         await pool.query(
           `UPDATE usuarios
          SET nome = ?, login = ?, email = ?, senha_hash = ?, permissao = ?, status = ?

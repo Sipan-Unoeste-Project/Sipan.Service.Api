@@ -1,5 +1,17 @@
 @host = http://localhost:5089
 
+### Status do login
+GET {{host}}/api/auth/status
+
+### Entrar
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "Admin@123"
+}
+
 ### Listar pessoas
 GET {{host}}/api/pessoas
 
@@ -71,7 +83,7 @@ Content-Type: application/json
   "nome": "Admin SIPAN",
   "login": "admin",
   "email": "admin@sipan.local",
-  "senhaHash": "hash_exemplo",
+  "senha": "Admin@123",
   "permissao": "admin",
   "status": "Ativo"
 }

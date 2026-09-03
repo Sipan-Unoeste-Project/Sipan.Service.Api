@@ -29,12 +29,18 @@ export async function loginExists(pool, login, ignoreId) {
   return rows.length > 0;
 }
 
-/** @param {unknown} body */
-export function readSenhaHash(body) {
+/** Lê a senha em texto (campo `senha` ou legado `senhaHash`). */
+export function readSenhaPlain(body) {
   const record = /** @type {Record<string, unknown>} */ (body);
-  if (typeof record.senhaHash === 'string') return record.senhaHash.trim();
-  if (typeof record.senha_hash === 'string') return record.senha_hash.trim();
+  if (typeof record.senha === 'string' && record.senha) return record.senha;
+  if (typeof record.senhaHash === 'string' && record.senhaHash) return record.senhaHash;
+  if (typeof record.senha_hash === 'string' && record.senha_hash) return record.senha_hash;
   return undefined;
+}
+
+/** @deprecated use readSenhaPlain */
+export function readSenhaHash(body) {
+  return readSenhaPlain(body);
 }
 
 /**
@@ -68,12 +74,12 @@ export function validateUsuario(body, options = {}) {
     return fail('Campo email excede 150 caracteres.');
   }
 
-  const senhaHash = readSenhaHash(body);
-  if (requireSenha && !senhaHash) {
-    return fail('Campo senhaHash é obrigatório.');
+  const senha = readSenhaPlain(body);
+  if (requireSenha && !senha) {
+    return fail('Campo senha é obrigatório.');
   }
-  if (senhaHash && senhaHash.length > 255) {
-    return fail('Campo senhaHash excede 255 caracteres.');
+  if (senha && senha.length > 128) {
+    return fail('Campo senha excede 128 caracteres.');
   }
 
   if (permissao != null && typeof permissao === 'string' && permissao.trim().length > 50) {
@@ -83,5 +89,5 @@ export function validateUsuario(body, options = {}) {
     return fail('Campo status excede 50 caracteres.');
   }
 
-  return ok({ senhaHash });
+  return ok({ senha });
 }
