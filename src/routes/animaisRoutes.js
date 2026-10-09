@@ -18,9 +18,6 @@ const ANIMAL_SELECT = `
 `;
 const MSG_NAO_ENCONTRADO = 'Animal não encontrado.';
 
-/**
- * @param {import('mysql2/promise').Pool} pool
- */
 export function animaisRouter(pool) {
   const r = Router();
 
@@ -181,6 +178,19 @@ export function animaisRouter(pool) {
     asyncHandler(async (req, res) => {
       const id = parseRouteId(req.params.id);
       if (!id) return res.status(404).end();
+
+      const [[{ total }]] = await pool.query(
+        `SELECT
+          (SELECT COUNT(*) FROM apac_saude_registros WHERE animal_id = ?) +
+          (SELECT COUNT(*) FROM apac_saude_vacinas WHERE animal_id = ?) AS total`,
+        [id, id]
+      );
+      if (Number(total) > 0) {
+        return res.status(409).json({
+          mensagem:
+            'Este animal possui histórico de saúde vinculado, que deve ser preservado. Não é possível excluí-lo.',
+        });
+      }
 
       const [result] = await pool.query('DELETE FROM animais WHERE id = ?', [id]);
       if (result.affectedRows === 0) return res.status(404).end();

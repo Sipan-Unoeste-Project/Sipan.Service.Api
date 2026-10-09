@@ -1,7 +1,3 @@
--- Tabelas APAC adicionais (doações, financeiro, despesas, saúde).
--- Execute após apac_schema.sql e com tabelas base sipan (pessoas, animais, …) já criadas.
--- Origem alinhada com Sipan.Service.Web/database/schema.sql
-
 USE sipan;
 
 CREATE TABLE IF NOT EXISTS apac_doacoes (
@@ -111,12 +107,20 @@ CREATE TABLE IF NOT EXISTS apac_saude_registros (
   descricao     TEXT            NULL,
   data_registro DATE            NOT NULL,
   veterinario   VARCHAR(150)    NULL,
+  criado_por_id BIGINT UNSIGNED NULL,
+  criado_por_nome VARCHAR(150)   NULL,
+  alterado_por_id BIGINT UNSIGNED NULL,
+  alterado_por_nome VARCHAR(150)  NULL,
+  anulada_em    TIMESTAMP       NULL,
+  anulada_por_id BIGINT UNSIGNED NULL,
+  anulada_por_nome VARCHAR(150)   NULL,
+  motivo_anulacao VARCHAR(500)    NULL,
   created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT fk_saude_registros_animal
     FOREIGN KEY (animal_id) REFERENCES animais (id)
-    ON DELETE CASCADE ON UPDATE CASCADE
+    ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS apac_saude_vacinas (
@@ -125,13 +129,23 @@ CREATE TABLE IF NOT EXISTS apac_saude_vacinas (
   nome          VARCHAR(150)    NOT NULL,
   data_aplicada DATE            NOT NULL,
   data_proxima  DATE            NULL,
+  descricao     TEXT            NULL,
+  veterinario   VARCHAR(150)    NULL,
+  criado_por_id BIGINT UNSIGNED NULL,
+  criado_por_nome VARCHAR(150)   NULL,
+  alterado_por_id BIGINT UNSIGNED NULL,
+  alterado_por_nome VARCHAR(150)  NULL,
+  anulada_em    TIMESTAMP       NULL,
+  anulada_por_id BIGINT UNSIGNED NULL,
+  anulada_por_nome VARCHAR(150)   NULL,
+  motivo_anulacao VARCHAR(500)    NULL,
   status        ENUM('em_dia', 'a_vencer', 'vencida') NOT NULL DEFAULT 'em_dia',
   created_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT fk_saude_vacinas_animal
     FOREIGN KEY (animal_id) REFERENCES animais (id)
-    ON DELETE CASCADE ON UPDATE CASCADE
+    ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 INSERT INTO apac_despesa_categorias (nome, descricao, icone) VALUES

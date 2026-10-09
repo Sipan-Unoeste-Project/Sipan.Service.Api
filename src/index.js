@@ -44,14 +44,12 @@ app.use(requirePermissao);
 
 app.use('/api/auth', authRouter(pool));
 
-// SIPAN
 app.use('/api/pessoas', pessoasRouter(pool));
 app.use('/api/animais', animaisRouter(pool));
 app.use('/api/voluntarios', voluntariosRouter(pool));
 app.use('/api/usuarios', usuariosRouter(pool));
 app.use('/api/adocoes', adocoesRouter(pool));
 
-// APAC
 app.use('/api/estoque', apacEstoqueRouter(pool));
 app.use('/api/campanhas', apacCampanhasRouter(pool));
 app.use('/api/doacoes', apacDoacoesRouter(pool));
@@ -80,7 +78,14 @@ app.use((err, _req, res, _next) => {
   if (err.code === 'ER_BAD_FIELD_ERROR') {
     return res.status(503).json({
       mensagem:
-        'Coluna do banco incompatível com a API. Execute database/migrations/001_apac_estoque_limite_baixo.sql no MySQL.',
+        'Coluna do banco incompatível com a API. No diretório Sipan.Service.Api, execute npm run migrate e reinicie a API.',
+    });
+  }
+
+  if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+    return res.status(409).json({
+      mensagem:
+        'Não é possível excluir este registro porque existem dados vinculados que precisam ser preservados.',
     });
   }
 
