@@ -13,7 +13,6 @@ import {
   queryBusca,
   queryString,
   statusOrDefault,
-  trimOrNull,
 } from '../helpers/routeHelpers.js';
 
 const TABLE = 'usuarios';
@@ -79,9 +78,10 @@ export function usuariosRouter(pool) {
       const v = validateUsuario(req.body, { requireSenha: true });
       if (!v.ok) return res.status(400).json({ mensagem: v.error });
 
-      const { nome, login, email, permissao, status } = req.body;
+      const { nome, login, email, status } = req.body;
       const loginVal = login.trim();
       const senha = v.senha;
+      const permissaoVal = v.permissao;
 
       if (!senha) {
         return res.status(400).json({ mensagem: 'Campo senha é obrigatório.' });
@@ -101,7 +101,7 @@ export function usuariosRouter(pool) {
           loginVal,
           email.trim(),
           senhaHash,
-          trimOrNull(permissao),
+          permissaoVal,
           statusOrDefault(status, 'Ativo'),
         ]
       );
@@ -128,7 +128,7 @@ export function usuariosRouter(pool) {
         return res.status(404).json({ mensagem: MSG_NAO_ENCONTRADO });
       }
 
-      const { nome, login, email, permissao, status } = req.body;
+      const { nome, login, email, status } = req.body;
       const loginVal = login.trim();
       const senha = readSenhaPlain(req.body);
 
@@ -136,8 +136,15 @@ export function usuariosRouter(pool) {
         return res.status(409).json({ mensagem: 'Login já cadastrado.' });
       }
 
-      const permissaoVal = trimOrNull(permissao);
+      const permissaoVal = v.permissao;
       const statusVal = statusOrDefault(status, 'Ativo');
+      const souEu = req.usuario?.id != null && Number(req.usuario.id) === id;
+
+      if (souEu && String(statusVal).toLowerCase() === 'inativo') {
+        return res.status(400).json({
+          mensagem: 'Você não pode inativar a própria conta.',
+        });
+      }
 
       if (senha) {
         const senhaHash = await hashPassword(senha);
@@ -166,6 +173,12 @@ export function usuariosRouter(pool) {
     asyncHandler(async (req, res) => {
       const id = parseRouteId(req.params.id);
       if (!id) return res.status(404).end();
+
+      if (req.usuario?.id != null && Number(req.usuario.id) === id) {
+        return res.status(400).json({
+          mensagem: 'Você não pode excluir a própria conta.',
+        });
+      }
 
       const [result] = await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
       if (result.affectedRows === 0) return res.status(404).end();
