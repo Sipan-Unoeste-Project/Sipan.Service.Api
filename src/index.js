@@ -15,6 +15,7 @@ import { apacSaudeRouter } from './routes/apacSaudeRoutes.js';
 import { adocoesRouter } from './routes/adocoesRoutes.js';
 import { authRouter } from './routes/authRoutes.js';
 import { requireAuth } from './middleware/requireAuth.js';
+import { requirePermissao } from './middleware/requirePermissao.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 5089);
@@ -38,7 +39,8 @@ app.use(express.json());
 
 const pool = createPool();
 
-app.use(requireAuth);
+app.use(requireAuth(pool));
+app.use(requirePermissao);
 
 app.use('/api/auth', authRouter(pool));
 

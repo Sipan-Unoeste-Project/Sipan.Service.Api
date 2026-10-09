@@ -1,4 +1,5 @@
 import { fail, ok, requireObject } from './validationHelpers.js';
+import { isPermissaoValida, normalizarPermissao } from './permissoesHelpers.js';
 
 /** @param {import('mysql2').RowDataPacket} row */
 export function toUsuarioDto(row) {
@@ -7,7 +8,7 @@ export function toUsuarioDto(row) {
     nome: row.nome,
     login: row.login,
     email: row.email,
-    permissao: row.permissao,
+    permissao: normalizarPermissao(row.permissao),
     status: row.status,
   };
 }
@@ -82,12 +83,20 @@ export function validateUsuario(body, options = {}) {
     return fail('Campo senha excede 128 caracteres.');
   }
 
-  if (permissao != null && typeof permissao === 'string' && permissao.trim().length > 50) {
-    return fail('Campo permissao excede 50 caracteres.');
+  if (typeof permissao !== 'string' || !permissao.trim()) {
+    return fail('Campo permissao é obrigatório.');
+  }
+  if (!isPermissaoValida(permissao.trim())) {
+    return fail(
+      'Permissão inválida. Use: Administrador, Financeiro, Veterinário ou Voluntário.'
+    );
   }
   if (status != null && typeof status === 'string' && status.trim().length > 50) {
     return fail('Campo status excede 50 caracteres.');
   }
 
-  return ok({ senha });
+  return ok({
+    senha,
+    permissao: normalizarPermissao(permissao.trim()),
+  });
 }
