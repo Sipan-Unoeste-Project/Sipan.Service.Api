@@ -175,5 +175,137 @@ export function apacSaudeRouter(pool) {
     })
   );
 
+  r.put(
+    '/registros/:id',
+    asyncHandler(async (req, res) => {
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).json({ mensagem: 'Registro não encontrado.' });
+
+      const invalid = requireObject(req.body);
+      if (invalid) return res.status(400).json({ mensagem: invalid.error });
+
+      const animalId = parseRouteId(req.body.animal_id);
+      if (!animalId || !(await existsById(pool, 'animais', animalId))) {
+        return res.status(400).json({ mensagem: 'Campo animal_id inválido.' });
+      }
+
+      const tipo = req.body.tipo;
+      const titulo = typeof req.body.titulo === 'string' ? req.body.titulo.trim() : '';
+      if (!titulo) return res.status(400).json({ mensagem: 'Campo titulo é obrigatório.' });
+      if (!['consulta', 'vacina', 'exame', 'cirurgia'].includes(tipo)) {
+        return res.status(400).json({ mensagem: 'Campo tipo inválido.' });
+      }
+
+      const data =
+        parseDateInput(req.body.data_registro) ||
+        parseDateInput(req.body.data) ||
+        new Date().toISOString().slice(0, 10);
+      const vet = trimOrNull(req.body.veterinario) || trimOrNull(req.body.vet);
+
+      const [result] = await pool.query(
+        `UPDATE apac_saude_registros
+         SET animal_id = ?, tipo = ?, titulo = ?, descricao = ?, data_registro = ?, veterinario = ?
+         WHERE id = ?`,
+        [animalId, tipo, titulo, trimOrNull(req.body.descricao), data, vet, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ mensagem: 'Registro não encontrado.' });
+      }
+
+      const [rows] = await pool.query(`${REGISTRO_SELECT} WHERE r.id = ?`, [id]);
+      const row = rows[0];
+      res.json({
+        id: Number(row.id),
+        animal_id: Number(row.animal_id),
+        animal_nome: row.animal_nome,
+        tipo: row.tipo,
+        titulo: row.titulo,
+        descricao: row.descricao,
+        data_registro: formatDateIso(row.data_registro),
+        veterinario: row.veterinario,
+      });
+    })
+  );
+
+  r.delete(
+    '/registros/:id',
+    asyncHandler(async (req, res) => {
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).end();
+
+      const [result] = await pool.query('DELETE FROM apac_saude_registros WHERE id = ?', [id]);
+      if (result.affectedRows === 0) return res.status(404).end();
+      res.status(204).end();
+    })
+  );
+
+  r.put(
+    '/vacinas/:id',
+    asyncHandler(async (req, res) => {
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).json({ mensagem: 'Vacina não encontrada.' });
+
+      const invalid = requireObject(req.body);
+      if (invalid) return res.status(400).json({ mensagem: invalid.error });
+
+      const animalId = parseRouteId(req.body.animal_id);
+      if (!animalId || !(await existsById(pool, 'animais', animalId))) {
+        return res.status(400).json({ mensagem: 'Campo animal_id inválido.' });
+      }
+
+      const nome = typeof req.body.nome === 'string' ? req.body.nome.trim() : '';
+      if (!nome) return res.status(400).json({ mensagem: 'Campo nome é obrigatório.' });
+
+      const aplicada =
+        parseDateInput(req.body.data_aplicada) ||
+        parseDateInput(req.body.aplicada) ||
+        new Date().toISOString().slice(0, 10);
+      const proxima =
+        parseDateInput(req.body.data_proxima) || parseDateInput(req.body.proxima);
+      if (proxima && proxima < aplicada) {
+        return res.status(400).json({
+          mensagem: 'A data da próxima vacina não pode ser anterior à data da vacina.',
+        });
+      }
+      const status =
+        typeof req.body.status === 'string' && req.body.status.trim()
+          ? req.body.status.trim()
+          : 'em_dia';
+
+      const [result] = await pool.query(
+        `UPDATE apac_saude_vacinas
+         SET animal_id = ?, nome = ?, data_aplicada = ?, data_proxima = ?, status = ?
+         WHERE id = ?`,
+        [animalId, nome, aplicada, proxima, status, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ mensagem: 'Vacina não encontrada.' });
+      }
+
+      const [rows] = await pool.query(`${VACINA_SELECT} WHERE v.id = ?`, [id]);
+      const v = rows[0];
+      res.json({
+        id: Number(v.id),
+        animal_id: Number(v.animal_id),
+        nome: v.nome,
+        data_aplicada: formatDateIso(v.data_aplicada),
+        data_proxima: formatDateIso(v.data_proxima),
+        status: v.status,
+      });
+    })
+  );
+
+  r.delete(
+    '/vacinas/:id',
+    asyncHandler(async (req, res) => {
+      const id = parseRouteId(req.params.id);
+      if (!id) return res.status(404).end();
+
+      const [result] = await pool.query('DELETE FROM apac_saude_vacinas WHERE id = ?', [id]);
+      if (result.affectedRows === 0) return res.status(404).end();
+      res.status(204).end();
+    })
+  );
+
   return r;
 }
